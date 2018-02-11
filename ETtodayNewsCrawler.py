@@ -1,18 +1,20 @@
 import asyncio
 import aiohttp
-import requests
 import time
+import os
 from bs4 import BeautifulSoup
 from xml.etree import ElementTree
 
 
 class ETtodayNewsCrawler:
     base_url = 'https://game.ettoday.net/'
+    api_key = 'Bing Speech API Key'
 
     def __init__(self):
         tStart = time.time()
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         loop.run_until_complete(self.crawl())
         loop.close()
 
@@ -22,7 +24,7 @@ class ETtodayNewsCrawler:
     async def crawl(self):
         async with aiohttp.ClientSession() as session:
             headers = {
-                'Ocp-Apim-Subscription-Key': 'Bing Speech API Key'}
+                'Ocp-Apim-Subscription-Key': self.api_key}
             async with session.post('https://api.cognitive.microsoft.com/sts/v1.0/issueToken', headers=headers) as response:
                 self.access_token = await response.text()
 
@@ -74,6 +76,9 @@ class ETtodayNewsCrawler:
         voice.set(
             'name', 'Microsoft Server Speech Text to Speech Voice (zh-TW, Yating, Apollo)')
         voice.text = text
+
+        # 建立資料夾
+        os.makedirs('./sounds', exist_ok=True)
 
         async with session.post('https://speech.platform.bing.com/synthesize', data=ElementTree.tostring(body), headers=headers) as response:
             sound = await response.read()
