@@ -8,6 +8,7 @@ from xml.etree import ElementTree
 
 class ETtodayNewsCrawler:
     base_url = 'https://game.ettoday.net/'
+    absolute_path = './'
     api_key = 'Bing Speech API Key'
 
     def __init__(self):
@@ -37,8 +38,8 @@ class ETtodayNewsCrawler:
 
                 tasks = []
                 for hot_news_a in hot_news_a_list:
-                    task = asyncio.ensure_future(self.crawlDetail(
-                        session, self.base_url + hot_news_a['href']))
+                    task = self.crawlDetail(
+                        session, self.base_url + hot_news_a['href'])
                     tasks.append(task)
                 await asyncio.gather(*tasks)
 
@@ -57,12 +58,16 @@ class ETtodayNewsCrawler:
             else:
                 desc = '簡介：' + story_p_list[3].text
 
+            print(title)
+            print(desc)
+
             tasks = []
             tasks.append(self.downloadSpeech(session, title))
             tasks.append(self.downloadSpeech(session, desc))
             await asyncio.gather(*tasks)
 
     async def downloadSpeech(self, session, text):
+        print('下載中' + text)
 
         headers = {"Content-type": "application/ssml+xml",
                    "X-Microsoft-OutputFormat": "riff-16khz-16bit-mono-pcm",
@@ -77,12 +82,14 @@ class ETtodayNewsCrawler:
             'name', 'Microsoft Server Speech Text to Speech Voice (zh-TW, Yating, Apollo)')
         voice.text = text
 
+        uri = self.absolute_path + 'sounds/'
+
         # 建立資料夾
-        os.makedirs('./sounds', exist_ok=True)
+        os.makedirs(uri, exist_ok=True)
 
         async with session.post('https://speech.platform.bing.com/synthesize', data=ElementTree.tostring(body), headers=headers) as response:
             sound = await response.read()
-            with open('./sounds/' + text[0:12] + '.wav', 'wb') as f:
+            with open(uri + text[0:12] + '.wav', 'wb') as f:
                 f.write(sound)
 
 
